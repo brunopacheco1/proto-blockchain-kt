@@ -45,11 +45,11 @@ class BlockchainService @Autowired constructor(private val networkService: Netwo
         return transaction.toMono()
     }
 
-    private fun mine(): Mono<Block> {
+    fun mine(): Mono<Void> {
         val block = createBlock()
         networkService.broadcastBlock(block)
         val transaction = createAndBroadcastTransaction(12.5, "00", networkService.getNodeId())
-        return  block
+        return block.and(transaction)
     }
 
     private fun createBlock(): Mono<Block> {
