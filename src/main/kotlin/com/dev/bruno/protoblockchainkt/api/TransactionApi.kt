@@ -19,7 +19,7 @@ class TransactionApi @Autowired constructor(val service: BlockchainService) {
         return service.createAndBroadcastTransaction(amount, recipient, recipient)
     }
 
-    @RequestMapping(method = [RequestMethod.POST])
+    @RequestMapping(method = [RequestMethod.PUT])
     fun addBroadcastedTransaction(@RequestBody transaction: Transaction): Mono<Transaction> {
         val (_, amount, sender, recipient, transactionId) = transaction
         return service.createTransaction(amount, sender, recipient, transactionId)
