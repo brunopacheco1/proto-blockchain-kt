@@ -7,8 +7,10 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 import reactor.core.publisher.Mono
 import reactor.core.publisher.toMono
+import java.security.MessageDigest
 import java.time.LocalDateTime
 import java.util.*
+import kotlin.collections.HashSet
 
 @Service
 class BlockchainService @Autowired constructor(private val networkService: NetworkService) {
@@ -38,7 +40,7 @@ class BlockchainService @Autowired constructor(private val networkService: Netwo
             amount: Double,
             sender: String,
             recipient: String,
-            transactionId: String = UUID.randomUUID().toString()
+            transactionId: String? = UUID.randomUUID().toString()
     ): Mono<Transaction> {
         val transaction = Transaction(blockchain.chain.size, amount, sender, recipient, transactionId)
         blockchain.pendingTransactions.add(transaction)
@@ -62,7 +64,7 @@ class BlockchainService @Autowired constructor(private val networkService: Netwo
     private fun buildBlock(): Block {
         return Block(
                 this.blockchain.chain.size,
-                this.blockchain.pendingTransactions,
+                HashSet<Transaction>(this.blockchain.pendingTransactions),
                 LocalDateTime.now(),
                 this.blockchain.chain.last().hash,
                 0,
@@ -78,6 +80,16 @@ class BlockchainService @Autowired constructor(private val networkService: Netwo
     }
 
     private fun generateHash(block: Block) {
-        block.hash = "0"
+        val blockBytes = block.toString().toByteArray()
+        val md = MessageDigest.getInstance("SHA-256")
+        val digest = md.digest(blockBytes)
+        block.hash = digest.fold(
+                initial = "",
+                operation = { str, it -> str + "%02x".format(it) }
+        )
+    }
+
+    fun getBlockchain(): Mono<Blockchain> {
+        return blockchain.toMono()
     }
 }

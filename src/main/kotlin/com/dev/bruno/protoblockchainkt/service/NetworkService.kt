@@ -1,15 +1,21 @@
 package com.dev.bruno.protoblockchainkt.service
 
 import com.dev.bruno.protoblockchainkt.domain.Block
+import com.dev.bruno.protoblockchainkt.domain.Network
 import com.dev.bruno.protoblockchainkt.domain.Transaction
 import org.springframework.stereotype.Service
 import reactor.core.publisher.Mono
+import reactor.core.publisher.toMono
 import java.util.*
 
 @Service
 class NetworkService {
 
-    val network: HashSet<String> = hashSetOf()
+    private val network: Network
+
+    init {
+        network = Network(hashSetOf(), UUID.randomUUID().toString())
+    }
 
     fun broadcastTransaction(transaction: Mono<Transaction>): Mono<Transaction> {
         return transaction
@@ -19,7 +25,11 @@ class NetworkService {
         return block
     }
 
+    fun getNetwork(): Mono<Network> {
+        return network.toMono()
+    }
+
     fun getNodeId(): String {
-        return UUID.randomUUID().toString()
+        return network.nodeId
     }
 }
