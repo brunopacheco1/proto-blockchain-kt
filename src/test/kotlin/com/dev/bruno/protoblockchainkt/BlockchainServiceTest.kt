@@ -1,5 +1,7 @@
 package com.dev.bruno.protoblockchainkt
 
+import com.dev.bruno.protoblockchainkt.dto.BroadcastedTransaction
+import com.dev.bruno.protoblockchainkt.dto.NewTransaction
 import com.dev.bruno.protoblockchainkt.service.BlockchainService
 import com.dev.bruno.protoblockchainkt.service.NetworkService
 import org.junit.Before
@@ -32,8 +34,9 @@ class BlockchainServiceTest {
     }
 
     @Test
-    fun whenCreatingTransaction_shouldAddItToPendingTransactions() {
-        val transaction = objectUnderTest!!.createTransaction(AMOUNT, SENDER, RECIPIENT, TRANSACTION_ID).block()
+    fun whenAddingBroadcastedTransaction_shouldAddItToPendingTransactions() {
+        val broadcastedTransaction = BroadcastedTransaction(AMOUNT, SENDER, RECIPIENT, TRANSACTION_ID)
+        val transaction = objectUnderTest!!.addBroadcastedTransaction(broadcastedTransaction).block()
         assert(transaction!!.amount == AMOUNT)
         assert(transaction.blockIndex == BLOCK_INDEX)
         assert(transaction.recipient == RECIPIENT)
@@ -51,12 +54,12 @@ class BlockchainServiceTest {
 
     @Test
     fun whenCreatingAndBroadcastingTransaction_shouldAddItToPendingTransactions() {
-        val transaction = objectUnderTest!!.createAndBroadcastTransaction(AMOUNT, SENDER, RECIPIENT).block()
+        val newTransaction = NewTransaction(AMOUNT, SENDER, RECIPIENT)
+        val transaction = objectUnderTest!!.createAndBroadcastTransaction(newTransaction).block()
         assert(transaction!!.amount == AMOUNT)
         assert(transaction.blockIndex == BLOCK_INDEX)
         assert(transaction.recipient == RECIPIENT)
         assert(transaction.sender == SENDER)
-        assert(transaction.transactionId != null)
 
         val blockchain = objectUnderTest!!.getBlockchain().block()
         assert(blockchain!!.pendingTransactions.size == 1)

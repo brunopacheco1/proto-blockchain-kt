@@ -6,12 +6,11 @@ import com.dev.bruno.protoblockchainkt.domain.Transaction
 import org.springframework.stereotype.Service
 import reactor.core.publisher.Mono
 import reactor.core.publisher.toMono
-import java.util.*
 
 @Service
 class NetworkService {
 
-    private val network: Network = Network(hashSetOf(), UUID.randomUUID().toString())
+    private val network: Network = Network()
 
     fun broadcastTransaction(transaction: Mono<Transaction>): Mono<Transaction> {
         return transaction
