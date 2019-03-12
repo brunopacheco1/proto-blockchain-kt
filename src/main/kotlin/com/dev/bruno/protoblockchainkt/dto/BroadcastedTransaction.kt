@@ -1,14 +1,14 @@
 package com.dev.bruno.protoblockchainkt.dto
 
+import javax.validation.constraints.Min
 import javax.validation.constraints.NotBlank
-import javax.validation.constraints.NotNull
 
 data class BroadcastedTransaction(
-        @NotNull
+        @field:Min(0)
         val amount: Double,
-        @NotNull
+        @field:NotBlank
         val sender: String,
-        @NotNull
+        @field:NotBlank
         val recipient: String,
         @NotBlank
         val transactionId: String

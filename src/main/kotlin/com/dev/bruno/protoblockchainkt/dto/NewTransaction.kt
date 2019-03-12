@@ -1,12 +1,13 @@
 package com.dev.bruno.protoblockchainkt.dto
 
-import javax.validation.constraints.NotNull
+import javax.validation.constraints.Min
+import javax.validation.constraints.NotBlank
 
 data class NewTransaction(
-        @NotNull
+        @field:Min(0)
         val amount: Double,
-        @NotNull
+        @field:NotBlank
         val sender: String,
-        @NotNull
+        @field:NotBlank
         val recipient: String
 )

@@ -9,18 +9,19 @@ import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestMethod
 import org.springframework.web.bind.annotation.RestController
+import javax.validation.Valid
 
 @RestController
 @RequestMapping(path = ["/transaction"])
 class TransactionApi @Autowired constructor(val service: BlockchainService) {
 
     @RequestMapping(method = [RequestMethod.POST])
-    fun createAndBroadcastTransaction(@RequestBody newTransaction: NewTransaction): Transaction {
+    fun createAndBroadcastTransaction(@Valid @RequestBody newTransaction: NewTransaction): Transaction {
         return service.createAndBroadcastTransaction(newTransaction)
     }
 
     @RequestMapping(method = [RequestMethod.PUT])
-    fun addBroadcastedTransaction(@RequestBody broadcastedTransaction: BroadcastedTransaction): Transaction {
+    fun addBroadcastedTransaction(@Valid @RequestBody broadcastedTransaction: BroadcastedTransaction): Transaction {
         return service.addBroadcastedTransaction(broadcastedTransaction)
     }
 }

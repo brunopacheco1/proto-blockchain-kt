@@ -50,12 +50,11 @@ class BlockchainService @Autowired constructor(private val networkService: Netwo
         return transaction
     }
 
-    fun mine(): Block {
+    fun mine() {
         val block = createBlock()
         networkService.broadcastBlock(block)
         val newTransaction = NewTransaction(12.5, "00", networkService.getNodeId())
         createAndBroadcastTransaction(newTransaction)
-        return block
     }
 
     private fun createBlock(): Block {
@@ -89,7 +88,7 @@ class BlockchainService @Autowired constructor(private val networkService: Netwo
     fun generateHash(block: Block): String {
         val blockAsString = block.toString()
         val blockBytes = blockAsString.toByteArray()
-        val md = MessageDigest.getInstance("MD5")
+        val md = MessageDigest.getInstance("SHA-256")
         val digest = md.digest(blockBytes)
         return digest.fold(
                 initial = "",
@@ -99,5 +98,18 @@ class BlockchainService @Autowired constructor(private val networkService: Netwo
 
     fun getBlockchain(): Blockchain {
         return blockchain
+    }
+
+    fun addBroadcastedBlock(block: Block) {
+        if (isValidBlock(block)) {
+            addToChain(block)
+        }
+    }
+
+    private fun isValidBlock(block: Block): Boolean {
+        val startsWith0000 = !block.hash.startsWith("0000")
+        val hasTheSameGeneratedHash = generateHash(block) != block.hash
+        val hasTheSameBlockIndex = block.index != blockchain.chain.size
+        return startsWith0000 && hasTheSameGeneratedHash && hasTheSameBlockIndex
     }
 }
