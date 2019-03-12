@@ -11,11 +11,7 @@ import java.util.*
 @Service
 class NetworkService {
 
-    private val network: Network
-
-    init {
-        network = Network(hashSetOf(), UUID.randomUUID().toString())
-    }
+    private val network: Network = Network(hashSetOf(), UUID.randomUUID().toString())
 
     fun broadcastTransaction(transaction: Mono<Transaction>): Mono<Transaction> {
         return transaction
