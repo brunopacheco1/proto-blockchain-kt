@@ -5,14 +5,13 @@ import com.dev.bruno.protoblockchainkt.service.BlockchainService
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
-import reactor.core.publisher.Mono
 
 @RestController
 @RequestMapping("/blockchain")
-class BlockchainApi @Autowired constructor(private val blockchainService: BlockchainService){
+class BlockchainApi @Autowired constructor(private val blockchainService: BlockchainService) {
 
     @RequestMapping
-    fun getBlockchain(): Mono<Blockchain> {
+    fun getBlockchain(): Blockchain {
         return blockchainService.getBlockchain()
     }
 }

@@ -7,8 +7,6 @@ import com.dev.bruno.protoblockchainkt.dto.BroadcastedTransaction
 import com.dev.bruno.protoblockchainkt.dto.NewTransaction
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
-import reactor.core.publisher.Mono
-import reactor.core.publisher.toMono
 import java.security.MessageDigest
 import java.time.LocalDateTime
 import java.util.*
@@ -29,13 +27,14 @@ class BlockchainService @Autowired constructor(private val networkService: Netwo
         blockchain.chain.add(block)
     }
 
-    fun createAndBroadcastTransaction(@Valid newTransaction: NewTransaction): Mono<Transaction> {
+    fun createAndBroadcastTransaction(@Valid newTransaction: NewTransaction): Transaction {
         val (amount, sender, recipient) = newTransaction
         val transaction = createTransaction(amount, sender, recipient)
-        return networkService.broadcastTransaction(transaction)
+        networkService.broadcastTransaction(transaction)
+        return transaction
     }
 
-    fun addBroadcastedTransaction(@Valid broadcastedTransaction: BroadcastedTransaction): Mono<Transaction> {
+    fun addBroadcastedTransaction(@Valid broadcastedTransaction: BroadcastedTransaction): Transaction {
         val (amount, sender, recipient, transactionId) = broadcastedTransaction
         return createTransaction(amount, sender, recipient, transactionId)
     }
@@ -45,25 +44,25 @@ class BlockchainService @Autowired constructor(private val networkService: Netwo
             sender: String,
             recipient: String,
             transactionId: String = UUID.randomUUID().toString()
-    ): Mono<Transaction> {
+    ): Transaction {
         val transaction = Transaction(blockchain.chain.size, amount, sender, recipient, transactionId)
         blockchain.pendingTransactions.add(transaction)
-        return transaction.toMono()
+        return transaction
     }
 
-    fun mine(): Mono<Void> {
+    fun mine(): Block {
         val block = createBlock()
         networkService.broadcastBlock(block)
         val newTransaction = NewTransaction(12.5, "00", networkService.getNodeId())
-        val transaction = createAndBroadcastTransaction(newTransaction)
-        return block.and(transaction)
+        createAndBroadcastTransaction(newTransaction)
+        return block
     }
 
-    private fun createBlock(): Mono<Block> {
+    private fun createBlock(): Block {
         val block = buildBlock()
-        generateProofOfWork(block)
-        addToChain(block)
-        return block.toMono()
+        val provenBlock = generateProofOfWork(block)
+        addToChain(provenBlock)
+        return provenBlock
     }
 
     private fun buildBlock(): Block {
@@ -77,24 +76,28 @@ class BlockchainService @Autowired constructor(private val networkService: Netwo
         )
     }
 
-    private fun generateProofOfWork(block: Block) {
+    private fun generateProofOfWork(block: Block): Block {
+        var nonce = 0L
+        var hash = ""
         do {
-            block.nonce++
-            generateHash(block)
-        } while (!block.hash.startsWith("0000"))
+            nonce++
+            hash = generateHash(Block(block.index, block.transactions, block.timestamp, block.previousBlockHash, nonce, hash))
+        } while (!hash.startsWith("0000"))
+        return Block(block.index, block.transactions, block.timestamp, block.previousBlockHash, nonce, hash)
     }
 
-    private fun generateHash(block: Block) {
-        val blockBytes = block.toString().toByteArray()
-        val md = MessageDigest.getInstance("SHA-256")
+    fun generateHash(block: Block): String {
+        val blockAsString = block.toString()
+        val blockBytes = blockAsString.toByteArray()
+        val md = MessageDigest.getInstance("MD5")
         val digest = md.digest(blockBytes)
-        block.hash = digest.fold(
+        return digest.fold(
                 initial = "",
                 operation = { str, it -> str + "%02x".format(it) }
         )
     }
 
-    fun getBlockchain(): Mono<Blockchain> {
-        return blockchain.toMono()
+    fun getBlockchain(): Blockchain {
+        return blockchain
     }
 }

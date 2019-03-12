@@ -9,11 +9,11 @@ data class Block(
         @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
         val timestamp: LocalDateTime,
         val previousBlockHash: String,
-        var nonce: Long,
-        var hash: String
+        val nonce: Long,
+        val hash: String
 ) {
 
     override fun toString(): String {
-        return "Block(index=$index, transactions=$transactions, timestamp=$timestamp, previousBlockHash='$previousBlockHash', nonce=$nonce, hash='$hash')"
+        return "Block(index=$index, transactions=$transactions, timestamp=$timestamp, previousBlockHash='$previousBlockHash', nonce=$nonce)"
     }
 }

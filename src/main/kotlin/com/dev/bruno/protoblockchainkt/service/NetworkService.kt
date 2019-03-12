@@ -4,24 +4,20 @@ import com.dev.bruno.protoblockchainkt.domain.Block
 import com.dev.bruno.protoblockchainkt.domain.Network
 import com.dev.bruno.protoblockchainkt.domain.Transaction
 import org.springframework.stereotype.Service
-import reactor.core.publisher.Mono
-import reactor.core.publisher.toMono
 
 @Service
 class NetworkService {
 
     private val network: Network = Network()
 
-    fun broadcastTransaction(transaction: Mono<Transaction>): Mono<Transaction> {
-        return transaction
+    fun broadcastTransaction(transaction: Transaction) {
     }
 
-    fun broadcastBlock(block: Mono<Block>): Mono<Block> {
-        return block
+    fun broadcastBlock(block: Block) {
     }
 
-    fun getNetwork(): Mono<Network> {
-        return network.toMono()
+    fun getNetwork(): Network {
+        return network
     }
 
     fun getNodeId(): String {

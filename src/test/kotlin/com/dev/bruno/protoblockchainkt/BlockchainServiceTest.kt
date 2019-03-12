@@ -14,7 +14,7 @@ class BlockchainServiceTest {
     private val RECIPIENT = "Recipient Test"
     private val TRANSACTION_ID = "Transaction Id"
     private val BLOCK_INDEX = 1
-    private var objectUnderTest: BlockchainService? = null
+    private var objectUnderTest: BlockchainService = BlockchainService(NetworkService())
 
     @Before
     fun setUp() {
@@ -23,8 +23,8 @@ class BlockchainServiceTest {
 
     @Test
     fun whenServiceIsCreated_shouldContainsGenesisBlock() {
-        val blockchain = objectUnderTest!!.getBlockchain().block()
-        assert(blockchain!!.chain.size == 1)
+        val blockchain = objectUnderTest.getBlockchain()
+        assert(blockchain.chain.size == 1)
         assert(blockchain.pendingTransactions.isEmpty())
         assert(blockchain.chain.first().hash == "0")
         assert(blockchain.chain.first().previousBlockHash == "0")
@@ -36,15 +36,15 @@ class BlockchainServiceTest {
     @Test
     fun whenAddingBroadcastedTransaction_shouldAddItToPendingTransactions() {
         val broadcastedTransaction = BroadcastedTransaction(AMOUNT, SENDER, RECIPIENT, TRANSACTION_ID)
-        val transaction = objectUnderTest!!.addBroadcastedTransaction(broadcastedTransaction).block()
-        assert(transaction!!.amount == AMOUNT)
+        val transaction = objectUnderTest.addBroadcastedTransaction(broadcastedTransaction)
+        assert(transaction.amount == AMOUNT)
         assert(transaction.blockIndex == BLOCK_INDEX)
         assert(transaction.recipient == RECIPIENT)
         assert(transaction.sender == SENDER)
         assert(transaction.transactionId == TRANSACTION_ID)
 
-        val blockchain = objectUnderTest!!.getBlockchain().block()
-        assert(blockchain!!.pendingTransactions.size == 1)
+        val blockchain = objectUnderTest.getBlockchain()
+        assert(blockchain.pendingTransactions.size == 1)
         assert(blockchain.pendingTransactions.first().amount == transaction.amount)
         assert(blockchain.pendingTransactions.first().blockIndex == transaction.blockIndex)
         assert(blockchain.pendingTransactions.first().recipient == transaction.recipient)
@@ -55,18 +55,40 @@ class BlockchainServiceTest {
     @Test
     fun whenCreatingAndBroadcastingTransaction_shouldAddItToPendingTransactions() {
         val newTransaction = NewTransaction(AMOUNT, SENDER, RECIPIENT)
-        val transaction = objectUnderTest!!.createAndBroadcastTransaction(newTransaction).block()
-        assert(transaction!!.amount == AMOUNT)
+        val transaction = objectUnderTest.createAndBroadcastTransaction(newTransaction)
+        assert(transaction.amount == AMOUNT)
         assert(transaction.blockIndex == BLOCK_INDEX)
         assert(transaction.recipient == RECIPIENT)
         assert(transaction.sender == SENDER)
 
-        val blockchain = objectUnderTest!!.getBlockchain().block()
-        assert(blockchain!!.pendingTransactions.size == 1)
+        val blockchain = objectUnderTest.getBlockchain()
+        assert(blockchain.pendingTransactions.size == 1)
         assert(blockchain.pendingTransactions.first().amount == transaction.amount)
         assert(blockchain.pendingTransactions.first().blockIndex == transaction.blockIndex)
         assert(blockchain.pendingTransactions.first().recipient == transaction.recipient)
         assert(blockchain.pendingTransactions.first().sender == transaction.sender)
         assert(blockchain.pendingTransactions.first().transactionId == transaction.transactionId)
+    }
+
+    @Test
+    fun whenMining_shouldGenerateProofOfWorkCorrectly() {
+        val newTransaction = NewTransaction(AMOUNT, SENDER, RECIPIENT)
+        objectUnderTest.createAndBroadcastTransaction(newTransaction)
+        objectUnderTest.mine()
+        val blockchain = objectUnderTest.getBlockchain()
+        val hash = objectUnderTest.generateHash(blockchain.chain.last())
+        assert(blockchain.chain.last().hash == hash)
+    }
+
+    @Test
+    fun whenMining_shouldAddPendingTransactionsToTheNewBlock() {
+        val newTransaction = NewTransaction(AMOUNT, SENDER, RECIPIENT)
+        objectUnderTest.createAndBroadcastTransaction(newTransaction)
+        objectUnderTest.mine()
+        val blockchain = objectUnderTest.getBlockchain()
+        assert(blockchain.chain.last().transactions.first().amount == AMOUNT)
+        assert(blockchain.chain.last().transactions.first().blockIndex == BLOCK_INDEX)
+        assert(blockchain.chain.last().transactions.first().recipient == RECIPIENT)
+        assert(blockchain.chain.last().transactions.first().sender == SENDER)
     }
 }
