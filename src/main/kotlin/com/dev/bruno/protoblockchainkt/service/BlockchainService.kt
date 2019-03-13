@@ -10,7 +10,6 @@ import org.springframework.stereotype.Service
 import java.security.MessageDigest
 import java.time.LocalDateTime
 import java.util.*
-import javax.validation.Valid
 
 @Service
 class BlockchainService @Autowired constructor(private val networkService: NetworkService) {
@@ -27,14 +26,14 @@ class BlockchainService @Autowired constructor(private val networkService: Netwo
         blockchain.chain.add(block)
     }
 
-    fun createAndBroadcastTransaction(@Valid newTransaction: NewTransaction): Transaction {
+    fun createAndBroadcastTransaction(newTransaction: NewTransaction): Transaction {
         val (amount, sender, recipient) = newTransaction
         val transaction = createTransaction(amount, sender, recipient)
         networkService.broadcastTransaction(transaction)
         return transaction
     }
 
-    fun addBroadcastedTransaction(@Valid broadcastedTransaction: BroadcastedTransaction): Transaction {
+    fun addBroadcastedTransaction(broadcastedTransaction: BroadcastedTransaction): Transaction {
         val (amount, sender, recipient, transactionId) = broadcastedTransaction
         return createTransaction(amount, sender, recipient, transactionId)
     }
@@ -79,10 +78,9 @@ class BlockchainService @Autowired constructor(private val networkService: Netwo
         var nonce = 0L
         var hash = ""
         do {
-            nonce++
-            hash = generateHash(Block(block.index, block.transactions, block.timestamp, block.previousBlockHash, nonce, hash))
+            hash = generateHash(block.copy(hash = hash, nonce = ++nonce))
         } while (!hash.startsWith("0000"))
-        return Block(block.index, block.transactions, block.timestamp, block.previousBlockHash, nonce, hash)
+        return block.copy(hash = hash, nonce = nonce)
     }
 
     fun generateHash(block: Block): String {
@@ -107,9 +105,9 @@ class BlockchainService @Autowired constructor(private val networkService: Netwo
     }
 
     private fun isValidBlock(block: Block): Boolean {
-        val startsWith0000 = !block.hash.startsWith("0000")
-        val hasTheSameGeneratedHash = generateHash(block) != block.hash
-        val hasTheSameBlockIndex = block.index != blockchain.chain.size
-        return startsWith0000 && hasTheSameGeneratedHash && hasTheSameBlockIndex
+        val startsWith0000 = block.hash.startsWith("0000")
+        val hasTheSameGeneratedHash = generateHash(block) == block.hash
+        val hasTheCorrectBlockIndex = block.index == blockchain.chain.size
+        return startsWith0000 && hasTheSameGeneratedHash && hasTheCorrectBlockIndex
     }
 }
