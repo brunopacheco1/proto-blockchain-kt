@@ -82,7 +82,7 @@ class BlockchainService @Autowired constructor(private val networkService: Netwo
         return block.copy(hash = hash, nonce = nonce)
     }
 
-    private fun generateHash(block: Block): String {
+    fun generateHash(block: Block): String {
         val blockBytes = block.toString().toByteArray()
         val md = MessageDigest.getInstance("SHA-256")
         val digest = md.digest(blockBytes)
