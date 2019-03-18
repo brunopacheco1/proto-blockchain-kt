@@ -5,7 +5,7 @@ import java.time.LocalDateTime
 
 data class Block(
         val index: Int,
-        val transactions: Set<Transaction>,
+        val transactions: List<Transaction>,
         @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
         val timestamp: LocalDateTime,
         val previousBlockHash: String,

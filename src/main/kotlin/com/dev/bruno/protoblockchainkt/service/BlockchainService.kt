@@ -17,7 +17,7 @@ class BlockchainService @Autowired constructor(private val networkService: Netwo
     private val blockchain: Blockchain = Blockchain()
 
     init {
-        val genesisBlock = Block(0, setOf(), LocalDateTime.now(), "0", 100, "0")
+        val genesisBlock = Block(0, listOf(), LocalDateTime.now(), "0", 100, "0")
         addToChain(genesisBlock)
     }
 
@@ -66,7 +66,7 @@ class BlockchainService @Autowired constructor(private val networkService: Netwo
     private fun buildBlock(): Block {
         return Block(
                 this.blockchain.chain.size,
-                this.blockchain.pendingTransactions.toSet(),
+                this.blockchain.pendingTransactions.toList(),
                 LocalDateTime.now(),
                 this.blockchain.chain.last().hash,
                 0,
@@ -75,33 +75,22 @@ class BlockchainService @Autowired constructor(private val networkService: Netwo
     }
 
     private fun generateProofOfWork(block: Block): Block {
-        var nonce = 0L
-        var hash = ""
+        var (nonce, hash) = 0L to ""
         do {
             hash = generateHash(block.copy(hash = hash, nonce = ++nonce))
         } while (!hash.startsWith("0000"))
         return block.copy(hash = hash, nonce = nonce)
     }
 
-    fun generateHash(block: Block): String {
-        val blockAsString = block.toString()
-        val blockBytes = blockAsString.toByteArray()
+    private fun generateHash(block: Block): String {
+        val blockBytes = block.toString().toByteArray()
         val md = MessageDigest.getInstance("SHA-256")
         val digest = md.digest(blockBytes)
-        return digest.fold(
-                initial = "",
-                operation = { str, it -> str + "%02x".format(it) }
-        )
-    }
-
-    fun getBlockchain(): Blockchain {
-        return blockchain
+        return digest.fold(initial = "", operation = { str, it -> str + "%02x".format(it) })
     }
 
     fun addBroadcastedBlock(block: Block) {
-        if (isValidBlock(block)) {
-            addToChain(block)
-        }
+        if (isValidBlock(block)) addToChain(block)
     }
 
     private fun isValidBlock(block: Block): Boolean {
@@ -109,5 +98,9 @@ class BlockchainService @Autowired constructor(private val networkService: Netwo
         val hasTheSameGeneratedHash = generateHash(block) == block.hash
         val hasTheCorrectBlockIndex = block.index == blockchain.chain.size
         return startsWith0000 && hasTheSameGeneratedHash && hasTheCorrectBlockIndex
+    }
+
+    fun getBlockchain(): Blockchain {
+        return blockchain
     }
 }
