@@ -5,19 +5,20 @@ import com.dev.bruno.protoblockchainkt.domain.Blockchain
 import com.dev.bruno.protoblockchainkt.domain.Transaction
 import com.dev.bruno.protoblockchainkt.dto.BroadcastedTransaction
 import com.dev.bruno.protoblockchainkt.dto.NewTransaction
+import com.dev.bruno.protoblockchainkt.helper.generateHash
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
-import java.security.MessageDigest
 import java.time.LocalDateTime
 import java.util.*
 
 @Service
 class BlockchainService @Autowired constructor(private val networkService: NetworkService) {
 
+    private val HASH_PREFIX = "0000"
     private val blockchain: Blockchain = Blockchain()
 
     init {
-        val genesisBlock = Block(0, listOf(), LocalDateTime.now(), "0", 100, "0")
+        val genesisBlock = buildBlock()
         addToChain(genesisBlock)
     }
 
@@ -63,44 +64,33 @@ class BlockchainService @Autowired constructor(private val networkService: Netwo
         return provenBlock
     }
 
-    private fun buildBlock(): Block {
-        return Block(
-                this.blockchain.chain.size,
-                this.blockchain.pendingTransactions.toList(),
-                LocalDateTime.now(),
-                this.blockchain.chain.last().hash,
-                0,
-                ""
-        )
-    }
+    private fun buildBlock() = Block(
+            this.blockchain.chain.size,
+            this.blockchain.pendingTransactions.toList(),
+            LocalDateTime.now(),
+            this.blockchain.chain.last().hash,
+            0,
+            "0"
+    )
 
     private fun generateProofOfWork(block: Block): Block {
         var (nonce, hash) = 0L to ""
         do {
-            hash = generateHash(block.copy(hash = hash, nonce = ++nonce))
-        } while (!hash.startsWith("0000"))
+            hash = block.copy(hash = hash, nonce = ++nonce).generateHash()
+        } while (!hash.startsWith(HASH_PREFIX))
         return block.copy(hash = hash, nonce = nonce)
     }
 
-    fun generateHash(block: Block): String {
-        val blockBytes = block.toString().toByteArray()
-        val md = MessageDigest.getInstance("SHA-256")
-        val digest = md.digest(blockBytes)
-        return digest.fold(initial = "", operation = { str, it -> str + "%02x".format(it) })
-    }
-
     fun addBroadcastedBlock(block: Block) {
-        if (isValidBlock(block)) addToChain(block)
+        if (isValidToAdd(block)) addToChain(block)
     }
 
-    private fun isValidBlock(block: Block): Boolean {
-        val startsWith0000 = block.hash.startsWith("0000")
-        val hasTheSameGeneratedHash = generateHash(block) == block.hash
+    fun isValidToAdd(block: Block): Boolean {
+        val startsWith0000 = block.hash.startsWith(HASH_PREFIX)
+        val hasTheSameGeneratedHash = block.generateHash() == block.hash
         val hasTheCorrectBlockIndex = block.index == blockchain.chain.size
         return startsWith0000 && hasTheSameGeneratedHash && hasTheCorrectBlockIndex
     }
 
-    fun getBlockchain(): Blockchain {
-        return blockchain
-    }
+    fun getBlockchain() = blockchain
 }
