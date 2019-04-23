@@ -2,6 +2,7 @@ package com.dev.bruno.protoblockchainkt
 
 import com.dev.bruno.protoblockchainkt.dto.BroadcastedTransaction
 import com.dev.bruno.protoblockchainkt.dto.NewTransaction
+import com.dev.bruno.protoblockchainkt.helper.generateHash
 import com.dev.bruno.protoblockchainkt.service.BlockchainService
 import com.dev.bruno.protoblockchainkt.service.NetworkService
 import org.junit.Before
@@ -76,7 +77,7 @@ class BlockchainServiceTest {
         objectUnderTest.createAndBroadcastTransaction(newTransaction)
         objectUnderTest.mine()
         val blockchain = objectUnderTest.getBlockchain()
-        val hash = objectUnderTest.generateHash(blockchain.chain.last())
+        val hash = blockchain.chain.last().generateHash()
         assert(blockchain.chain.last().hash == hash)
     }
 

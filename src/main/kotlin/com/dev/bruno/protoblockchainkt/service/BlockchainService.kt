@@ -53,8 +53,8 @@ class BlockchainService @Autowired constructor(private val networkService: Netwo
     fun mine() {
         val block = createBlock()
         networkService.broadcastBlock(block)
-        val newTransaction = NewTransaction(12.5, "00", networkService.getNodeId())
-        createAndBroadcastTransaction(newTransaction)
+        val miningReward = NewTransaction(12.5, "00", networkService.getNodeId())
+        createAndBroadcastTransaction(miningReward)
     }
 
     private fun createBlock(): Block {
@@ -68,8 +68,8 @@ class BlockchainService @Autowired constructor(private val networkService: Netwo
             this.blockchain.chain.size,
             this.blockchain.pendingTransactions.toList(),
             LocalDateTime.now(),
-            this.blockchain.chain.last().hash,
-            0,
+            this.blockchain.chain.lastOrNull()?.hash ?: "0",
+            100L,
             "0"
     )
 
