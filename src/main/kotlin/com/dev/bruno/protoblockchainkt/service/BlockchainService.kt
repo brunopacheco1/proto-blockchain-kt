@@ -15,6 +15,9 @@ import java.util.*
 class BlockchainService @Autowired constructor(private val networkService: NetworkService) {
 
     private val HASH_PREFIX = "0000"
+    private val DEFAULT_SENDER = "00"
+    private val DEFAULT_HASH = "0"
+    private val DEFAULT_NONCE = 100L
     private val blockchain: Blockchain = Blockchain()
 
     init {
@@ -53,7 +56,7 @@ class BlockchainService @Autowired constructor(private val networkService: Netwo
     fun mine() {
         val block = createBlock()
         networkService.broadcastBlock(block)
-        val miningReward = NewTransaction(12.5, "00", networkService.getNodeId())
+        val miningReward = NewTransaction(12.5, DEFAULT_SENDER, networkService.getNodeId())
         createAndBroadcastTransaction(miningReward)
     }
 
@@ -68,15 +71,16 @@ class BlockchainService @Autowired constructor(private val networkService: Netwo
             this.blockchain.chain.size,
             this.blockchain.pendingTransactions.toList(),
             LocalDateTime.now(),
-            this.blockchain.chain.lastOrNull()?.hash ?: "0",
-            100L,
-            "0"
+            this.blockchain.chain.lastOrNull()?.hash ?: DEFAULT_HASH,
+            DEFAULT_NONCE,
+            DEFAULT_HASH
     )
 
     private fun generateProofOfWork(block: Block): Block {
-        var (nonce, hash) = 0L to ""
+        var nonce = 0L
+        var hash: String
         do {
-            hash = block.copy(hash = hash, nonce = ++nonce).generateHash()
+            hash = block.copy(nonce = ++nonce).generateHash()
         } while (!hash.startsWith(HASH_PREFIX))
         return block.copy(hash = hash, nonce = nonce)
     }
