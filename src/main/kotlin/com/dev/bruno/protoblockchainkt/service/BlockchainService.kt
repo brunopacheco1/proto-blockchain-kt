@@ -5,27 +5,32 @@ import com.dev.bruno.protoblockchainkt.domain.Blockchain
 import com.dev.bruno.protoblockchainkt.domain.Transaction
 import com.dev.bruno.protoblockchainkt.dto.BroadcastedTransaction
 import com.dev.bruno.protoblockchainkt.dto.NewTransaction
+import com.dev.bruno.protoblockchainkt.dto.Node
 import com.dev.bruno.protoblockchainkt.helper.generateHash
+import com.dev.bruno.protoblockchainkt.repository.BlockchainRepository
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 import java.time.LocalDateTime
 import java.util.*
 
 @Service
-class BlockchainService @Autowired constructor(private val networkService: NetworkService) {
+class BlockchainService @Autowired constructor(
+        private val networkService: NetworkService,
+        private val repository: BlockchainRepository
+) {
 
-    private val HASH_PREFIX = "0000"
-    private val DEFAULT_SENDER = "00"
-    private val DEFAULT_HASH = "0"
-    private val DEFAULT_NONCE = 100L
-    private val blockchain: Blockchain = Blockchain()
+    val DEFAULT_SENDER = "00"
 
     init {
-        val genesisBlock = buildBlock()
-        addToChain(genesisBlock)
+        val blockchain = repository.getBlockchain()
+        if (blockchain.chain.isEmpty()) {
+            val genesisBlock = buildBlock()
+            addToChain(genesisBlock)
+        }
     }
 
     private fun addToChain(block: Block) {
+        val blockchain = repository.getBlockchain()
         blockchain.pendingTransactions.clear()
         blockchain.chain.add(block)
     }
@@ -48,6 +53,7 @@ class BlockchainService @Autowired constructor(private val networkService: Netwo
             recipient: String,
             transactionId: String = UUID.randomUUID().toString()
     ): Transaction {
+        val blockchain = repository.getBlockchain()
         val transaction = Transaction(blockchain.chain.size, amount, sender, recipient, transactionId)
         blockchain.pendingTransactions.add(transaction)
         return transaction
@@ -67,21 +73,21 @@ class BlockchainService @Autowired constructor(private val networkService: Netwo
         return provenBlock
     }
 
-    private fun buildBlock() = Block(
-            this.blockchain.chain.size,
-            this.blockchain.pendingTransactions.toList(),
-            LocalDateTime.now(),
-            this.blockchain.chain.lastOrNull()?.hash ?: DEFAULT_HASH,
-            DEFAULT_NONCE,
-            DEFAULT_HASH
-    )
+    private fun buildBlock(): Block {
+        val blockchain = repository.getBlockchain()
+        val previousBlockHash = blockchain.chain.lastOrNull()?.hash ?: Blockchain.DEFAULT_HASH
+        return Block(
+                blockchain.chain.size, blockchain.pendingTransactions.toList(), LocalDateTime.now(),
+                previousBlockHash, Blockchain.DEFAULT_NONCE, Blockchain.DEFAULT_HASH
+        )
+    }
 
     private fun generateProofOfWork(block: Block): Block {
         var nonce = 0L
         var hash: String
         do {
             hash = block.copy(nonce = ++nonce).generateHash()
-        } while (!hash.startsWith(HASH_PREFIX))
+        } while (!hash.startsWith(Blockchain.HASH_PREFIX))
         return block.copy(hash = hash, nonce = nonce)
     }
 
@@ -90,11 +96,20 @@ class BlockchainService @Autowired constructor(private val networkService: Netwo
     }
 
     fun isValidToAdd(block: Block): Boolean {
-        val startsWith0000 = block.hash.startsWith(HASH_PREFIX)
+        val blockchain = repository.getBlockchain()
+        val startsWith0000 = block.hash.startsWith(Blockchain.HASH_PREFIX)
         val hasTheSameGeneratedHash = block.generateHash() == block.hash
         val hasTheCorrectBlockIndex = block.index == blockchain.chain.size
         return startsWith0000 && hasTheSameGeneratedHash && hasTheCorrectBlockIndex
     }
 
-    fun getBlockchain() = blockchain
+    fun getBlockchain() = repository.getBlockchain()
+
+    fun consensus(newNode: Node) {
+        networkService.registerNode(newNode)
+        val newNodeHasLongerChain = newNode.blockchain.chain.size > repository.getBlockchain().chain.size
+        if (newNodeHasLongerChain && newNode.blockchain.isValid()) {
+            repository.setBlockchain(newNode.blockchain)
+        }
+    }
 }

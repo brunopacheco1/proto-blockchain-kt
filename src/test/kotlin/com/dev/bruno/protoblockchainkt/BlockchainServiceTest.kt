@@ -2,7 +2,9 @@ package com.dev.bruno.protoblockchainkt
 
 import com.dev.bruno.protoblockchainkt.dto.BroadcastedTransaction
 import com.dev.bruno.protoblockchainkt.dto.NewTransaction
+import com.dev.bruno.protoblockchainkt.dto.Node
 import com.dev.bruno.protoblockchainkt.helper.generateHash
+import com.dev.bruno.protoblockchainkt.repository.BlockchainRepository
 import com.dev.bruno.protoblockchainkt.service.BlockchainService
 import com.dev.bruno.protoblockchainkt.service.NetworkService
 import org.junit.Before
@@ -15,11 +17,14 @@ class BlockchainServiceTest {
     private val RECIPIENT = "Recipient Test"
     private val TRANSACTION_ID = "Transaction Id"
     private val BLOCK_INDEX = 1
-    private var objectUnderTest: BlockchainService = BlockchainService(NetworkService())
+    private val DUMMY_NODE = "DUMMY NODE"
+    private var repository = BlockchainRepository()
+    private var objectUnderTest = BlockchainService(NetworkService(), repository)
 
     @Before
     fun setUp() {
-        objectUnderTest = BlockchainService(NetworkService())
+        repository = BlockchainRepository()
+        objectUnderTest = BlockchainService(NetworkService(), repository)
     }
 
     @Test
@@ -91,5 +96,26 @@ class BlockchainServiceTest {
         assert(blockchain.chain.last().transactions.first().blockIndex == BLOCK_INDEX)
         assert(blockchain.chain.last().transactions.first().recipient == RECIPIENT)
         assert(blockchain.chain.last().transactions.first().sender == SENDER)
+    }
+
+    @Test
+    fun whenRunningConsensus_shouldUpdateCurrentBlockchain() {
+        objectUnderTest.mine()
+        val newTransaction = NewTransaction(AMOUNT, SENDER, RECIPIENT)
+        objectUnderTest.createAndBroadcastTransaction(newTransaction)
+        objectUnderTest.mine()
+
+        val blockchain = objectUnderTest.getBlockchain()
+        val node = Node(DUMMY_NODE, blockchain)
+        var newBlockchainService = BlockchainService(NetworkService(), BlockchainRepository())
+        newBlockchainService.consensus(node)
+
+        val currentBlockchain = newBlockchainService.getBlockchain()
+        assert(currentBlockchain.chain.size == 3)
+        assert(currentBlockchain.chain.last().transactions.size == 2)
+        assert(currentBlockchain.chain.last().transactions.last().amount == AMOUNT)
+        assert(currentBlockchain.chain.last().transactions.last().blockIndex == 2)
+        assert(currentBlockchain.chain.last().transactions.last().recipient == RECIPIENT)
+        assert(currentBlockchain.chain.last().transactions.last().sender == SENDER)
     }
 }
