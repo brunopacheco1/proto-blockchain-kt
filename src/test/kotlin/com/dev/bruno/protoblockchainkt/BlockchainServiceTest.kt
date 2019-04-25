@@ -1,5 +1,6 @@
 package com.dev.bruno.protoblockchainkt
 
+import com.dev.bruno.protoblockchainkt.domain.BlockchainConstants
 import com.dev.bruno.protoblockchainkt.dto.BroadcastedTransaction
 import com.dev.bruno.protoblockchainkt.dto.NewTransaction
 import com.dev.bruno.protoblockchainkt.dto.Node
@@ -32,11 +33,11 @@ class BlockchainServiceTest {
         val blockchain = objectUnderTest.getBlockchain()
         assert(blockchain.chain.size == 1)
         assert(blockchain.pendingTransactions.isEmpty())
-        assert(blockchain.chain.first().hash == "0")
-        assert(blockchain.chain.first().previousBlockHash == "0")
+        assert(blockchain.chain.first().hash == BlockchainConstants.DEFAULT_HASH)
+        assert(blockchain.chain.first().previousBlockHash == BlockchainConstants.DEFAULT_HASH)
         assert(blockchain.chain.first().transactions.isEmpty())
         assert(blockchain.chain.first().index == 0)
-        assert(blockchain.chain.first().nonce == 100L)
+        assert(blockchain.chain.first().nonce == BlockchainConstants.DEFAULT_NONCE)
     }
 
     @Test
@@ -107,7 +108,7 @@ class BlockchainServiceTest {
 
         val blockchain = objectUnderTest.getBlockchain()
         val node = Node(DUMMY_NODE, blockchain)
-        var newBlockchainService = BlockchainService(NetworkService(), BlockchainRepository())
+        val newBlockchainService = BlockchainService(NetworkService(), BlockchainRepository())
         newBlockchainService.consensus(node)
 
         val currentBlockchain = newBlockchainService.getBlockchain()

@@ -1,7 +1,7 @@
 package com.dev.bruno.protoblockchainkt.service
 
 import com.dev.bruno.protoblockchainkt.domain.Block
-import com.dev.bruno.protoblockchainkt.domain.Blockchain
+import com.dev.bruno.protoblockchainkt.domain.BlockchainConstants
 import com.dev.bruno.protoblockchainkt.domain.Transaction
 import com.dev.bruno.protoblockchainkt.dto.BroadcastedTransaction
 import com.dev.bruno.protoblockchainkt.dto.NewTransaction
@@ -18,8 +18,6 @@ class BlockchainService @Autowired constructor(
         private val networkService: NetworkService,
         private val repository: BlockchainRepository
 ) {
-
-    val DEFAULT_SENDER = "00"
 
     init {
         val blockchain = repository.getBlockchain()
@@ -62,7 +60,7 @@ class BlockchainService @Autowired constructor(
     fun mine() {
         val block = createBlock()
         networkService.broadcastBlock(block)
-        val miningReward = NewTransaction(12.5, DEFAULT_SENDER, networkService.getNodeId())
+        val miningReward = NewTransaction(BlockchainConstants.DEFAULT_MINING_REWARD, BlockchainConstants.DEFAULT_SENDER, networkService.getNodeId())
         createAndBroadcastTransaction(miningReward)
     }
 
@@ -75,10 +73,10 @@ class BlockchainService @Autowired constructor(
 
     private fun buildBlock(): Block {
         val blockchain = repository.getBlockchain()
-        val previousBlockHash = blockchain.chain.lastOrNull()?.hash ?: Blockchain.DEFAULT_HASH
+        val previousBlockHash = blockchain.chain.lastOrNull()?.hash ?: BlockchainConstants.DEFAULT_HASH
         return Block(
                 blockchain.chain.size, blockchain.pendingTransactions.toList(), LocalDateTime.now(),
-                previousBlockHash, Blockchain.DEFAULT_NONCE, Blockchain.DEFAULT_HASH
+                previousBlockHash, BlockchainConstants.DEFAULT_NONCE, BlockchainConstants.DEFAULT_HASH
         )
     }
 
@@ -87,7 +85,7 @@ class BlockchainService @Autowired constructor(
         var hash: String
         do {
             hash = block.copy(nonce = ++nonce).generateHash()
-        } while (!hash.startsWith(Blockchain.HASH_PREFIX))
+        } while (!hash.startsWith(BlockchainConstants.HASH_PREFIX))
         return block.copy(hash = hash, nonce = nonce)
     }
 
@@ -97,7 +95,7 @@ class BlockchainService @Autowired constructor(
 
     fun isValidToAdd(block: Block): Boolean {
         val blockchain = repository.getBlockchain()
-        val startsWith0000 = block.hash.startsWith(Blockchain.HASH_PREFIX)
+        val startsWith0000 = block.hash.startsWith(BlockchainConstants.HASH_PREFIX)
         val hasTheSameGeneratedHash = block.generateHash() == block.hash
         val hasTheCorrectBlockIndex = block.index == blockchain.chain.size
         return startsWith0000 && hasTheSameGeneratedHash && hasTheCorrectBlockIndex
